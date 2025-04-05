@@ -81,7 +81,7 @@ services:
       - DOCKER_INFLUXDB_INIT_PASSWORD=admin123
       - DOCKER_INFLUXDB_INIT_ORG=medical
       - DOCKER_INFLUXDB_INIT_BUCKET=appointments
-      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=my-super-secret-token
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=INESUD123
 
   appointment-service:
     build: ./appointment-service
@@ -92,7 +92,7 @@ services:
       - PATIENT_SERVICE_URL=http://patient-service:8000
       - DOCTOR_SERVICE_URL=http://doctor-service:3000
       - JWT_SECRET=INESUD123
-      - INFLUX_TOKEN=my-super-secret-token
+      - INFLUX_TOKEN=INESUD123
       - INFLUX_URL=http://influxdb:8086
     depends_on:
       - influxdb
