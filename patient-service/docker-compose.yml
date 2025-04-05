@@ -1,0 +1,45 @@
+services:
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+  patient-db:
+    image: mongo:6
+    ports:
+      - "27017:27017"
+    volumes:
+      - patient-data:/data/db
+
+  patient-service:
+    build: .
+    ports:
+      - "8000:8000"
+      - "50051:50051"
+    environment:
+      MONGODB_URI: mongodb://patient-db:27017/patientdb
+      AMQP_URL: amqp://admin:admin@rabbitmq
+    depends_on:
+      - patient-db
+      - rabbitmq
+  
+  medical-file-upload-service:
+    build: ../medical-file-upload-service
+    environment:
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
+      - PATIENT_SERVICE_ADDRESS=patient-service:50051
+    volumes:
+      - ../medical_files:/app/medical_files
+    depends_on:
+      - patient-service
+      - patient-db
+  
+
+volumes:
+  patient-data:
+  medical_files:

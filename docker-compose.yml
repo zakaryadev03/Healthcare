@@ -1,0 +1,105 @@
+services:
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+
+  doctor-db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: doctordb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - doctor-db-data:/var/lib/postgresql/data
+
+  patient-db:
+    image: mongo:6
+    ports:
+      - "27017:27017"
+    volumes:
+      - patient-data:/data/db
+  
+  doctor-service:
+    build: ./doctor-service
+    ports:
+      - "3000:3000"
+    environment:
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      DB_PORT: 5432
+      DB_HOST: doctor-db
+      DB_NAME: doctordb
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      JWT_SECRET: INESUD123
+      AMQP_URL: amqp://admin:admin@rabbitmq
+    depends_on:
+      - doctor-db
+      - rabbitmq
+
+  patient-service:
+    build: ./patient-service
+    ports:
+      - "8000:8000"
+      - "50051:50051"
+    environment:
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      MONGODB_URI: mongodb://patient-db:27017/patientdb
+      AMQP_URL: amqp://admin:admin@rabbitmq
+    depends_on:
+      - patient-db
+      - rabbitmq
+  
+  medical-file-upload-service:
+    build: ./medical-file-upload-service
+    environment:
+      - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - AWS_SECRET_KEY=${AWS_SECRET_KEY}
+      - PATIENT_SERVICE_ADDRESS=patient-service:50051
+    volumes:
+      - ../medical_files:/app/medical_files
+    depends_on:
+      - patient-service
+      - patient-db
+
+  influxdb:
+    image: influxdb:2.7
+    ports:
+      - "8086:8086"
+    volumes:
+      - influx_data:/var/lib/influxdb2
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=admin123
+      - DOCKER_INFLUXDB_INIT_ORG=medical
+      - DOCKER_INFLUXDB_INIT_BUCKET=appointments
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=my-super-secret-token
+
+  appointment-service:
+    build: ./appointment-service
+    ports:
+      - "8001:8000"
+    environment:
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
+      - PATIENT_SERVICE_URL=http://patient-service:8000
+      - DOCTOR_SERVICE_URL=http://doctor-service:3000
+      - JWT_SECRET=INESUD123
+      - INFLUX_TOKEN=my-super-secret-token
+      - INFLUX_URL=http://influxdb:8086
+    depends_on:
+      - influxdb
+  
+
+volumes:
+  patient-data:
+  medical_files:
+  doctor-db-data:
+  influx_data:

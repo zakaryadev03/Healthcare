@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+influxdb-client
+python-jose
+pydantic-settings
+tenacity
+httpx

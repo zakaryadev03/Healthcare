@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+service PatientService {
+  rpc UpdateMedicalFile(UpdateMedicalFileRequest) returns (UpdateMedicalFileResponse);
+}
+
+message UpdateMedicalFileRequest {
+  string patient_id = 1;
+  string s3_uri = 2;
+}
+
+message UpdateMedicalFileResponse {
+  bool success = 1;
+  string message = 2;
+}
